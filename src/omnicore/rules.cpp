@@ -67,6 +67,8 @@ std::vector<TransactionRestriction> CConsensusParams::GetRestrictions() const
 
         { MSC_TYPE_SEND_ALL,                  MP_TX_PKT_V0,  false,   MSC_SEND_ALL_BLOCK },
 
+        { MSC_TYPE_PUBLISH_METADATA,          MP_TX_PKT_V0,  true,    MSC_METADATA_BLOCK },
+
         { MSC_TYPE_OFFER_ACCEPT_A_BET,        MP_TX_PKT_V0,  false,   MSC_BET_BLOCK      },
     };
 
@@ -169,6 +171,7 @@ CMainConsensusParams::CMainConsensusParams()
     MSC_STO_BLOCK = 342650;
     MSC_METADEX_BLOCK = 999999;
     MSC_SEND_ALL_BLOCK = 999999;
+    MSC_METADATA_BLOCK = 999999;
     MSC_BET_BLOCK = 999999;
     MSC_STOV1_BLOCK = 999999;
     // Other feature activations:
@@ -207,6 +210,7 @@ CTestNetConsensusParams::CTestNetConsensusParams()
     MSC_STO_BLOCK = 0;
     MSC_METADEX_BLOCK = 0;
     MSC_SEND_ALL_BLOCK = 0;
+    MSC_METADATA_BLOCK = 0;
     MSC_BET_BLOCK = 999999;
     MSC_STOV1_BLOCK = 0;
     // Other feature activations:
@@ -245,6 +249,7 @@ CRegTestConsensusParams::CRegTestConsensusParams()
     MSC_STO_BLOCK = 0;
     MSC_METADEX_BLOCK = 0;
     MSC_SEND_ALL_BLOCK = 0;
+    MSC_METADATA_BLOCK = 0;
     MSC_BET_BLOCK = 999999;
     MSC_STOV1_BLOCK = 999999;
     // Other feature activations:
@@ -415,6 +420,9 @@ bool ActivateFeature(uint16_t featureId, int activationBlock, uint32_t minClient
         case FEATURE_STOV1:
             MutableConsensusParams().MSC_STOV1_BLOCK = activationBlock;
         break;
+        case FEATURE_METADATA:
+            MutableConsensusParams().MSC_METADATA_BLOCK = activationBlock;
+        break;
         default:
             supported = false;
         break;
@@ -483,6 +491,9 @@ bool DeactivateFeature(uint16_t featureId, int transactionBlock)
         case FEATURE_STOV1:
             MutableConsensusParams().MSC_STOV1_BLOCK = 999999;
         break;
+        case FEATURE_METADATA:
+            MutableConsensusParams().MSC_METADATA_BLOCK = 999999;
+        break;
         default:
             return false;
         break;
@@ -513,6 +524,7 @@ std::string GetFeatureName(uint16_t featureId)
         case FEATURE_TRADEALLPAIRS: return "Allow trading all pairs on the Distributed Exchange";
         case FEATURE_FEES: return "Fee system (inc 0.05% fee from trades of non-Omni pairs)";
         case FEATURE_STOV1: return "Cross-property Send To Owners";
+        case FEATURE_METADATA: return "Atomic Metadata";
 
         default: return "Unknown feature";
     }
@@ -556,6 +568,9 @@ bool IsFeatureActivated(uint16_t featureId, int transactionBlock)
             break;
         case FEATURE_STOV1:
             activationBlock = params.MSC_STOV1_BLOCK;
+            break;
+        case FEATURE_METADATA:
+            activationBlock = params.MSC_METADATA_BLOCK;
             break;
         default:
             return false;
