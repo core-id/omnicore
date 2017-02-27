@@ -30,6 +30,7 @@ void populateRPCTypeCloseCrowdsale(CMPTransaction& omniObj, UniValue& txobj);
 void populateRPCTypeGrant(CMPTransaction& omniObj, UniValue& txobj);
 void populateRPCTypeRevoke(CMPTransaction& omniOobj, UniValue& txobj);
 void populateRPCTypeChangeIssuer(CMPTransaction& omniObj, UniValue& txobj);
+void populateRPCTypePublishMetadata(CMPTransaction& omniObj, UniValue& txobj);
 void populateRPCTypeActivation(CMPTransaction& omniObj, UniValue& txobj);
 
 void populateRPCExtendedTypeSendToOwners(const uint256 txid, std::string extendedDetailsFilter, UniValue& txobj, uint16_t version);

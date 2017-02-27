@@ -15,6 +15,7 @@
 #include "omnicore/fetchwallettx.h"
 #include "omnicore/log.h"
 #include "omnicore/mdex.h"
+#include "omnicore/metadata.h"
 #include "omnicore/notifications.h"
 #include "omnicore/omnicore.h"
 #include "omnicore/rpcrequirements.h"
@@ -147,6 +148,118 @@ bool BalanceToJSON(const std::string& address, uint32_t property, UniValue& bala
     } else {
         return true;
     }
+}
+
+// Gets the metadata ID from a string
+UniValue omni_getmetadataid(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+            "omni_getmetadataid metadatastring\n"
+            "\nGet the metadata id for a provided string.\n"
+            "\nArguments:\n"
+            "1. metadatastring           (string, required) the metadata string\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"metadataid\" : \"metadataid\",    (string) the metadata id\n"
+            "  \"metadata\" : \"metadata\",        (string) the metadata string\n"
+            "}\n"
+            "\nExamples:\n"
+            + HelpExampleCli("omni_getmetadataid", "TEST")
+            + HelpExampleRpc("omni_getmetadataid", "TEST")
+        );
+
+    std::string metadata = params[0].get_str();
+    std::string metadataId = GetMetadataID(metadata);
+
+    UniValue response(UniValue::VOBJ);
+
+    response.push_back(Pair("metadataid", metadataId));
+    response.push_back(Pair("metadata", metadata));
+
+    return response;
+}
+
+// Gets the metadata for an address and ID
+UniValue omni_getmetadata(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() != 2)
+        throw runtime_error(
+            "omni_getmetadata address metadataid\n"
+            "\nGets the metadata associated with an address and id.\n"
+            "\nArguments:\n"
+            "1. address              (string, required) the address that published the metadatag\n"
+            "2. metadataid           (string, required) the metadata id\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"address\" : \"address\",          (string) the publishing address\n"
+            "  \"metadataid\" : \"metadataid\",    (string) the metadata id\n"
+            "  \"metadata\" : \"metadata\",        (string) the metadata string\n"
+            "}\n"
+            "\nExamples:\n"
+            + HelpExampleCli("omni_getmetadata", "\"1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P\" \"abcd\"")
+            + HelpExampleRpc("omni_getmetadata", "\"1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P\", \"abcd\"")
+        );
+
+    std::string address = ParseAddress(params[0]);
+    std::string metadataId = params[1].get_str();
+
+    if (metadataId.length() != 4) {
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "Metadata identifers are 4 characters long");
+    }
+
+    UniValue response(UniValue::VOBJ);
+
+    std::string metadata = p_OmniMetadataDB->GetMetadata(address, metadataId);
+
+    response.push_back(Pair("address", address));
+    response.push_back(Pair("metadataid", metadataId));
+    response.push_back(Pair("metadata", metadata));
+
+    return response;
+}
+
+// Gets all the metadata for an address
+UniValue omni_getaddressmetadata(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+            "omni_getaddressmetadata address\n"
+            "\nGets all the metadata associated with an address.\n"
+            "\nArguments:\n"
+            "1. address              (string, required) the address that published the metadata\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"address\" : \"address\",            (string) the address\n"
+            "  \"addressmetadata\": [                (array of JSON objects) a list of metadata objects\n"
+            "    {\n"
+            "      \"metadataid\" : \"metadataid\",    (string) the metadata id\n"
+            "      \"metadata\" : \"metadata\",        (string) the metadata string\n"
+            "    },\n"
+            "    ...\n"
+            "  ]\n"
+            "}\n"
+            "\nExamples:\n"
+            + HelpExampleCli("omni_getaddressmetadata", "\"1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P\"")
+            + HelpExampleRpc("omni_getaddressmetadata", "\"1EXoDusjGwvnjZUyKkxZ4UHEf77z6A5S4P\"")
+        );
+
+    std::string address = ParseAddress(params[0]);
+
+    UniValue response(UniValue::VOBJ);
+    UniValue addressMetadata(UniValue::VARR);
+
+    response.push_back(Pair("address", address));
+    std::set<std::string> metadataIds = p_OmniMetadataDB->GetAddressMetadata(address);
+    for (std::set<std::string>::iterator it = metadataIds.begin(); it != metadataIds.end(); it++) {
+        UniValue metadataObj(UniValue::VOBJ);
+        std::string metadata = p_OmniMetadataDB->GetMetadata(address, *it);
+        metadataObj.push_back(Pair("metadataid", GetMetadataID(metadata)));
+        metadataObj.push_back(Pair("metadata", metadata));
+        addressMetadata.push_back(metadataObj);
+    }
+    response.push_back(Pair("addressmetadata", addressMetadata));
+    return response;
 }
 
 // Obtains details of a fee distribution
@@ -732,6 +845,11 @@ UniValue mscrpc(const UniValue& params, bool fHelp)
             PrintToConsole("%d / %d = %d\n",d,z,dd);
             PrintToConsole("%d / %d = %d\n",e,z,ee);
 
+            break;
+        }
+        case 15:
+        {
+            p_OmniMetadataDB->printAll();
             break;
         }
         default:
@@ -2187,6 +2305,9 @@ static const CRPCCommand commands[] =
     { "omni layer (data retrieval)", "omni_getfeetrigger",             &omni_getfeetrigger,              false },
     { "omni layer (data retrieval)", "omni_getfeedistribution",        &omni_getfeedistribution,         false },
     { "omni layer (data retrieval)", "omni_getfeedistributions",       &omni_getfeedistributions,        false },
+    { "omni layer (data retrieval)", "omni_getmetadataid",             &omni_getmetadataid,              true  },
+    { "omni layer (data retrieval)", "omni_getmetadata",               &omni_getmetadata,                false },
+    { "omni layer (data retrieval)", "omni_getaddressmetadata",        &omni_getaddressmetadata,         false },
 #ifdef ENABLE_WALLET
     { "omni layer (data retrieval)", "omni_listtransactions",          &omni_listtransactions,           false },
     { "omni layer (data retrieval)", "omni_getfeeshare",               &omni_getfeeshare,                false },

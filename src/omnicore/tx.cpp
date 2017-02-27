@@ -8,6 +8,7 @@
 #include "omnicore/fees.h"
 #include "omnicore/log.h"
 #include "omnicore/mdex.h"
+#include "omnicore/metadata.h"
 #include "omnicore/notifications.h"
 #include "omnicore/omnicore.h"
 #include "omnicore/rules.h"
@@ -59,6 +60,7 @@ std::string mastercore::strTransactionType(uint16_t txType)
         case MSC_TYPE_GRANT_PROPERTY_TOKENS: return "Grant Property Tokens";
         case MSC_TYPE_REVOKE_PROPERTY_TOKENS: return "Revoke Property Tokens";
         case MSC_TYPE_CHANGE_ISSUER_ADDRESS: return "Change Issuer Address";
+        case MSC_TYPE_PUBLISH_METADATA: return "Publish Metadata";
         case MSC_TYPE_NOTIFICATION: return "Notification";
         case OMNICORE_MESSAGE_TYPE_ALERT: return "ALERT";
         case OMNICORE_MESSAGE_TYPE_DEACTIVATION: return "Feature Deactivation";
@@ -148,6 +150,9 @@ bool CMPTransaction::interpret_Transaction()
 
         case MSC_TYPE_CHANGE_ISSUER_ADDRESS:
             return interpret_ChangeIssuer();
+
+        case MSC_TYPE_PUBLISH_METADATA:
+            return interpret_PublishMetadata();
 
         case OMNICORE_MESSAGE_TYPE_DEACTIVATION:
             return interpret_Deactivation();
@@ -631,6 +636,24 @@ bool CMPTransaction::interpret_ChangeIssuer()
     return true;
 }
 
+/** Tx 80 */
+bool CMPTransaction::interpret_PublishMetadata()
+{
+    if (pkt_size < 5) {
+        return false;
+    }
+
+    const char* p = 4 + (char*) &pkt;
+    std::string metadataStr(p);
+    memcpy(metadata, metadataStr.c_str(), std::min(metadataStr.length(), sizeof(metadata)-1));
+
+    if ((!rpcOnly && msc_debug_packets) || msc_debug_packets_readonly) {
+        PrintToLog("\t        metadata: %d\n", metadata);
+    }
+
+    return true;
+}
+
 /** Tx 65533 */
 bool CMPTransaction::interpret_Deactivation()
 {
@@ -768,6 +791,9 @@ int CMPTransaction::interpretPacket()
 
         case MSC_TYPE_CHANGE_ISSUER_ADDRESS:
             return logicMath_ChangeIssuer();
+
+        case MSC_TYPE_PUBLISH_METADATA:
+            return logicMath_PublishMetadata();
 
         case OMNICORE_MESSAGE_TYPE_DEACTIVATION:
             return logicMath_Deactivation();
@@ -1943,6 +1969,24 @@ int CMPTransaction::logicMath_ChangeIssuer()
     sp.update_block = blockHash;
 
     assert(_my_sps->updateSP(property, sp));
+
+    return 0;
+}
+
+/** Tx 80 */
+int CMPTransaction::logicMath_PublishMetadata()
+{
+    if (!IsTransactionTypeAllowed(block, property, type, version)) {
+        PrintToLog("%s(): rejected: type %d or version %d not permitted for property %d at block %d\n",
+                __func__,
+                type,
+                version,
+                property,
+                block);
+        return (PKT_ERROR -22);
+    }
+
+    p_OmniMetadataDB->AddMetadata(block, sender, metadata);
 
     return 0;
 }

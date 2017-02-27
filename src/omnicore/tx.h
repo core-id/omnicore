@@ -57,6 +57,9 @@ private:
     // SendToOwners v1
     unsigned int distribution_property;
 
+    // Publish Metadata
+    char metadata[SP_STRING_FIELD_LEN];
+
     // CreatePropertyFixed, CreatePropertyVariable, CreatePropertyMananged, MetaDEx, SendAll
     unsigned char ecosystem;
 
@@ -119,6 +122,7 @@ private:
     bool interpret_GrantTokens();
     bool interpret_RevokeTokens();
     bool interpret_ChangeIssuer();
+    bool interpret_PublishMetadata();
     bool interpret_Activation();
     bool interpret_Deactivation();
     bool interpret_Alert();
@@ -142,6 +146,7 @@ private:
     int logicMath_GrantTokens();
     int logicMath_RevokeTokens();
     int logicMath_ChangeIssuer();
+    int logicMath_PublishMetadata();
     int logicMath_Activation();
     int logicMath_Deactivation();
     int logicMath_Alert();
@@ -202,6 +207,7 @@ public:
     uint32_t getMinClientVersion() const { return min_client_version; }
     unsigned int getIndexInBlock() const { return tx_idx; }
     uint32_t getDistributionProperty() const { return distribution_property; }
+    std::string getMetadata() const { return metadata; }
 
     /** Creates a new CMPTransaction object. */
     CMPTransaction()
@@ -253,6 +259,7 @@ public:
         activation_block = 0;
         min_client_version = 0;
         distribution_property = 0;
+        memset(&metadata, 0, sizeof(metadata));
     }
 
     /** Sets the given values. */
