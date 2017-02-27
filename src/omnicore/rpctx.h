@@ -21,6 +21,7 @@ UniValue omni_sendcanceltradesbyprice(const UniValue& params, bool fHelp);
 UniValue omni_sendcanceltradesbypair(const UniValue& params, bool fHelp);
 UniValue omni_sendcancelalltrades(const UniValue& params, bool fHelp);
 UniValue omni_sendchangeissuer(const UniValue& params, bool fHelp);
+UniValue omni_sendpublishmetadata(const UniValue& params, bool fHelp);
 UniValue omni_sendactivation(const UniValue& params, bool fHelp);
 UniValue omni_sendalert(const UniValue& params, bool fHelp);
 

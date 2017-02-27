@@ -1099,6 +1099,50 @@ UniValue omni_sendchangeissuer(const UniValue& params, bool fHelp)
     }
 }
 
+UniValue omni_sendpublishmetadata(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() != 2)
+        throw runtime_error(
+            "omni_sendpublishmetadata \"fromaddress\" \"metadata\"\n"
+
+            "\nPublish a metadata string.\n"
+
+            "\nArguments:\n"
+            "1. fromaddress          (string, required) the address to publish the metadata from\n"
+            "2. metadata             (string, required) the metadata string to publish\n"
+
+            "\nResult:\n"
+            "\"hash\"                  (string) the hex-encoded transaction hash\n"
+
+            "\nExamples:\n"
+            + HelpExampleCli("omni_sendpublishmetadata", "\"3HTHRxu3aSDV4deakjC7VmsiUp7c6dfbvs\" \"Metadata\"")
+            + HelpExampleRpc("omni_sendpublishmetadata", "\"3HTHRxu3aSDV4deakjC7VmsiUp7c6dfbvs\", \"Metadata\"")
+        );
+
+    // obtain parameters & info
+    std::string fromAddress = ParseAddress(params[0]);
+    std::string metadata = params[1].get_str();
+
+    // create a payload for the transaction
+    std::vector<unsigned char> payload = CreatePayload_PublishMetadata(metadata);
+
+    // request the wallet build the transaction (and if needed commit it)
+    uint256 txid;
+    std::string rawHex;
+    int result = WalletTxBuilder(fromAddress, "", "", 0, payload, txid, rawHex, autoCommit);
+
+    // check error and return the txid (or raw hex depending on autocommit)
+    if (result != 0) {
+        throw JSONRPCError(result, error_str(result));
+    } else {
+        if (!autoCommit) {
+            return rawHex;
+        } else {
+            return txid.GetHex();
+        }
+    }
+}
+
 UniValue omni_sendactivation(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 4)
@@ -1259,6 +1303,7 @@ static const CRPCCommand commands[] =
     { "omni layer (transaction creation)", "omni_sendclosecrowdsale",      &omni_sendclosecrowdsale,      false },
     { "omni layer (transaction creation)", "omni_sendchangeissuer",        &omni_sendchangeissuer,        false },
     { "omni layer (transaction creation)", "omni_sendall",                 &omni_sendall,                 false },
+    { "omni layer (transaction creation)", "omni_sendpublishmetadata",     &omni_sendpublishmetadata,     false },
     { "hidden",                            "omni_senddeactivation",        &omni_senddeactivation,        true  },
     { "hidden",                            "omni_sendactivation",          &omni_sendactivation,          false },
     { "hidden",                            "omni_sendalert",               &omni_sendalert,               true  },

@@ -9,6 +9,7 @@
 #include "omnicore/dex.h"
 #include "omnicore/errors.h"
 #include "omnicore/mdex.h"
+#include "omnicore/metadata.h"
 #include "omnicore/omnicore.h"
 #include "omnicore/pending.h"
 #include "omnicore/rpctxobject.h"
@@ -209,6 +210,9 @@ void populateRPCTypeInfo(CMPTransaction& mp_obj, UniValue& txobj, uint32_t txTyp
         case MSC_TYPE_CHANGE_ISSUER_ADDRESS:
             populateRPCTypeChangeIssuer(mp_obj, txobj);
             break;
+        case MSC_TYPE_PUBLISH_METADATA:
+            populateRPCTypePublishMetadata(mp_obj, txobj);
+            break;
         case OMNICORE_MESSAGE_TYPE_ACTIVATION:
             populateRPCTypeActivation(mp_obj, txobj);
             break;
@@ -235,6 +239,7 @@ bool showRefForTx(uint32_t txType)
         case MSC_TYPE_GRANT_PROPERTY_TOKENS: return true;
         case MSC_TYPE_REVOKE_PROPERTY_TOKENS: return false;
         case MSC_TYPE_CHANGE_ISSUER_ADDRESS: return true;
+        case MSC_TYPE_PUBLISH_METADATA: return false;
         case MSC_TYPE_SEND_ALL: return true;
         case OMNICORE_MESSAGE_TYPE_ACTIVATION: return false;
     }
@@ -490,6 +495,13 @@ void populateRPCTypeChangeIssuer(CMPTransaction& omniObj, UniValue& txobj)
     uint32_t propertyId = omniObj.getProperty();
     txobj.push_back(Pair("propertyid", (uint64_t)propertyId));
     txobj.push_back(Pair("divisible", isPropertyDivisible(propertyId)));
+}
+
+void populateRPCTypePublishMetadata(CMPTransaction& omniObj, UniValue& txobj)
+{
+    std::string metadata = omniObj.getMetadata();
+    txobj.push_back(Pair("metadataid", GetMetadataID(metadata)));
+    txobj.push_back(Pair("metadata", metadata));
 }
 
 void populateRPCTypeActivation(CMPTransaction& omniObj, UniValue& txobj)
